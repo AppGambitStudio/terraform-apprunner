@@ -36,6 +36,9 @@ repository_branch    = "branch name"
 port                 = "Port"
 
 ```
+Note: For now you have to configure github connection manually because terraform not allow to approve created github connection automatically.
+https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/apprunner_connection
+When you create github connection you have to allow aws to access you github repository so for that you have to allow that permission manually.
 #### Deploy Application with ECR Private repository
 
 ```

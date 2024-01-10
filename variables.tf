@@ -67,16 +67,6 @@ variable "configuration_source" {
   default     = "API"
 }
 
-variable "repository_url" {
-  description = "Github repository URL"
-  default     = "https://github.com/Prashant-jumpbyte/express-hello-world"
-}
-
-variable "repository_branch" {
-  description = "repository branch"
-  default     = "master"
-}
-
 //Requiredt for both
 variable "port" {
   description = "Image port"

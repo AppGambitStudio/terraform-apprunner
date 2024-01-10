@@ -35,8 +35,7 @@ module "apprunner" {
   runtime              = var.runtime
   start_command        = var.start_command
   configuration_source = var.configuration_source
-  repository_url       = var.repository_url
-  repository_branch    = var.repository_branch
+
 
   //Requiredt for both
   port = var.port

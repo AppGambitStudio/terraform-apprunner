@@ -1,5 +1,5 @@
 resource "aws_apprunner_auto_scaling_configuration_version" "ngnix-apprunner-autoscaling" {
-  auto_scaling_configuration_name = "${var.auto_scaling_configuration_name}${var.random_id_prefix}"
+  auto_scaling_configuration_name = "${var.auto_scaling_configuration_name}-${var.environment}-${var.random_id_prefix}"
   max_concurrency = 100
   max_size        = 5
   min_size        = 1
@@ -9,15 +9,31 @@ resource "aws_apprunner_auto_scaling_configuration_version" "ngnix-apprunner-aut
   }
 }
 
+resource "random_id" "random_id_prefix" {
+  byte_length = 2
+}
+
+module "iam" {
+  source = "../iam"
+
+  region           = var.region
+  environment      = var.environment
+  random_id_prefix = random_id.random_id_prefix.hex
+}
+
 resource "aws_apprunner_service" "ngnix-apprunner-service-ecr" {
   count = (var.isECR && var.image_repository_type == "ECR") ? 1 : 0
 
-  service_name = "${var.service_name}${var.random_id_prefix}"
+   depends_on = [module.iam]
+
+  service_name = "nginx-apprunner-${var.random_id_prefix}"
 
   source_configuration {
     image_repository {
       image_configuration {
         port = var.port
+        runtime_environment_variables = {
+        }
       }
       image_identifier      = var.image_identifier
       image_repository_type = var.image_repository_type
@@ -27,6 +43,7 @@ resource "aws_apprunner_service" "ngnix-apprunner-service-ecr" {
     }
     auto_deployments_enabled = var.auto_deployments_enabled
   }
+
 
   auto_scaling_configuration_arn = aws_apprunner_auto_scaling_configuration_version.ngnix-apprunner-autoscaling.arn
 
@@ -39,11 +56,11 @@ resource "aws_apprunner_service" "ngnix-apprunner-service-ecr" {
           unhealthy_threshold = 5
         }
 
-        # instance_configuration {
-        #   cpu               = 2048
-        #   instance_role_arn = "arn:aws:iam::609906240783:role/service-role/AppRunnerECRAccessRole"
-        #   memory            = 2048
-        # }
+        instance_configuration {
+          cpu               = 1024
+          instance_role_arn = var.app_runner_role
+          memory            = 2048
+        }
 
   tags = {
     Name = var.service_name
@@ -53,7 +70,7 @@ resource "aws_apprunner_service" "ngnix-apprunner-service-ecr" {
 resource "aws_apprunner_service" "ngnix-apprunner-service-ecr-public" {
   count = (var.isECR && var.image_repository_type == "ECR_PUBLIC") ? 1 : 0
 
-  service_name = "${var.service_name}${var.random_id_prefix}"
+  service_name = "${var.service_name}-${var.environment}-${var.random_id_prefix}"
 
   source_configuration {
     image_repository {
@@ -77,68 +94,7 @@ resource "aws_apprunner_service" "ngnix-apprunner-service-ecr-public" {
           unhealthy_threshold = 5
         }
 
-        # instance_configuration {
-        #   cpu               = 2048
-        #   instance_role_arn = "arn:aws:iam::609906240783:role/service-role/AppRunnerECRAccessRole"
-        #   memory            = 2048
-        # }
-
   tags = {
     Name = var.service_name
-  }
-}
-
-resource "aws_apprunner_service" "ngnix-apprunner-service-github" {
-  count = var.isECR ? 0 : 1
-
-  service_name = "${var.service_name}${var.random_id_prefix}"
-
-  source_configuration {
-    authentication_configuration {
-      connection_arn = aws_apprunner_connection.connection-guthub[0].arn
-    }
-    code_repository {
-      code_configuration {
-        code_configuration_values {
-          build_command = var.build_command
-          port          = var.port
-          runtime       = var.runtime
-          start_command = var.start_command
-        }
-        configuration_source = var.configuration_source
-      }
-      repository_url = var.repository_url
-      source_code_version {
-        type  = "BRANCH"
-        value = var.repository_branch
-      }
-    }
-    auto_deployments_enabled = var.auto_deployments_enabled
-  }
-
-  auto_scaling_configuration_arn = aws_apprunner_auto_scaling_configuration_version.ngnix-apprunner-autoscaling.arn
-
-  health_check_configuration {
-          healthy_threshold   = 1
-          interval            = 10
-          path                = "/"
-          protocol            = "TCP"
-          timeout             = 5
-          unhealthy_threshold = 5
-        }
-
-  tags = {
-    Name = "${var.service_name}${var.random_id_prefix}"
-  }
-}
-
-resource "aws_apprunner_connection" "connection-guthub" {
-  count = var.isECR ? 0 : 1
-
-  connection_name = "${var.connection_name}${var.random_id_prefix}"
-  provider_type   = "GITHUB"
-
-  tags = {
-    Name = "${var.connection_name}${var.random_id_prefix}"
   }
 }

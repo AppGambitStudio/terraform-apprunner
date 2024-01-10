@@ -62,14 +62,6 @@ variable "configuration_source" {
   description = "configuration source REPOSITORY:reads configuration values from the apprunner.yaml in repository  | API:ignores the apprunner.yaml file"
 }
 
-variable "repository_url" {
-  description = "Github repository URL"
-}
-
-variable "repository_branch" {
-  description = "repository branch"
-}
-
 //Requiredt for both
 variable "port" {
   description = "Image port"
